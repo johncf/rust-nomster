@@ -5,3 +5,4 @@ authors = ["johncf <johncf@protonmail.com>"]
 
 [dependencies]
 nom = "4.0.0-beta1"
+encoding = "0.2"
