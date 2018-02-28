@@ -21,6 +21,5 @@ fn get_contents<P: AsRef<Path>>(path: P) -> Result<String, Error> {
 
 fn main() {
     let contents = get_contents("webster/673.txt").unwrap();
-    let (next, consumed) = parser::start(&contents).unwrap();
-    println!("{} bytes consumed, {} bytes remaining", consumed.len(), next.len());
+    parser::parse(&contents);
 }
