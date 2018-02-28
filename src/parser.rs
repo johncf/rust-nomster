@@ -1,8 +1,8 @@
-use nom::{alpha, digit, line_ending, multispace0};
+use nom::{digit, line_ending, multispace0};
 
 named!(start<&str, &str>, take_until!("<hr>"));
 
-named!(page_sep<&str, u32>,
+named!(page_proper_mark<&str, u16>,
     do_parse!(
         tag!("<hr>") >>
         line_ending >>
@@ -14,34 +14,51 @@ named!(page_sep<&str, u32>,
         page_dup: digit >>
         tag!("<p>") >>
         line_ending >>
-        ( pgno_parse(page, page_dup) )
+        ( { assert_eq!(page, page_dup); pgno_parse(page) } )
     ));
 
-named!(alphabet<&str, &str>,
+named!(page_comment_mark<&str, u16>,
     do_parse!(
         multispace0 >>
-        a: delimited!(
-            tag!("<centered>"),
-            delimited!(
-                tag!("<point26>"),
-                terminated!(alpha, char!('.')),
-                tag!("</point26>")),
-            tag!("</centered>")) >>
-        multispace0 >>
-        ( a )
+        page: delimited!(
+            tag!("<--"),
+            ws!(delimited!(tag!("p."), digit, take_until!("-->"))),
+            tag!("-->")) >>
+        ( pgno_parse(page) )
     ));
 
-fn pgno_parse(page: &str, page_dup: &str) -> u32 {
-    let page = page.parse();
-    assert_eq!(page, page_dup.parse());
-    page.unwrap()
+named!(page_mark<&str, u16>, alt!(page_proper_mark | page_comment_mark));
+
+named!(plaintext<&str, &str>, is_not!("<>"));
+
+named!(xpage<&str, u16>,
+    delimited!(
+        tag!("<Xpage="),
+        map!(digit, pgno_parse),
+        tag!(">")
+    ));
+
+named!(mainword<&str, (&str, u16)>,
+    do_parse!(
+        multispace0 >>
+        word: delimited!(
+            tag!("<h1>"),
+            plaintext,
+            tag!("</h1>")) >>
+        multispace0 >>
+        page: xpage >>
+        ( word, page )
+    ));
+
+fn pgno_parse(page: &str) -> u16 {
+    page.parse().unwrap()
 }
 
 pub fn parse(contents: &str) {
     let (next, consumed) = start(contents).unwrap();
     println!("{} bytes header, {} bytes remaining", consumed.len(), next.len());
-    let (next, page) = page_sep(next).unwrap();
+    let (next, page) = page_mark(next).unwrap();
     println!("page {}, {} bytes remaining", page, next.len());
-    let (next, alphabet) = alphabet(next).unwrap();
-    println!("alphabet {}, {} bytes remaining", alphabet, next.len());
+    let (next, wordpage) = mainword(next).unwrap();
+    println!("word&page {:?}, {} bytes remaining", wordpage, next.len());
 }
