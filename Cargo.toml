@@ -1,8 +1,29 @@
 [package]
-name = "dictionary"
+name = "webster-parser"
 version = "0.1.0"
 authors = ["johncf <johncf@protonmail.com>"]
 
+[lib]
+name = "parster"
+path = "src/lib.rs"
+
+[[bin]]
+name = "sample"
+path = "src/bin/sample.rs"
+required-features = ["binaries"]
+
+[[bin]]
+name = "conv2utf8"
+path = "src/bin/conv2utf8.rs"
+required-features = ["binaries", "dosformat"]
+
+[features]
+default = ["binaries"]
+dosformat = ["encoding"]
+binaries = ["structopt"]
+
 [dependencies]
 nom = "4.0.0-beta1"
-encoding = "0.2"
+
+encoding = { version = "0.2", optional = true }
+structopt = { version = "0.2", optional = true }
