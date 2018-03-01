@@ -59,6 +59,9 @@ pub fn parse(contents: &str) {
     println!("{} bytes header, {} bytes remaining", consumed.len(), next.len());
     let (next, page) = page_mark(next).unwrap();
     println!("page {}, {} bytes remaining", page, next.len());
-    let (next, wordpage) = mainword(next).unwrap();
-    println!("word&page {:?}, {} bytes remaining", wordpage, next.len());
+    if let Ok((next, wordpage)) = mainword(next) {
+        println!("word&page {:?}, {} bytes remaining", wordpage, next.len());
+    } else {
+        println!("parsing failed!");
+    }
 }
