@@ -17,6 +17,11 @@ name = "conv2utf8"
 path = "src/bin/conv2utf8.rs"
 required-features = ["binaries", "dosformat"]
 
+[[bin]]
+name = "patch-004"
+path = "src/bin/patch-004.rs"
+required-features = ["binaries"]
+
 [features]
 default = ["binaries"]
 dosformat = ["encoding"]
