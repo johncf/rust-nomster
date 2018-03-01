@@ -1,4 +1,4 @@
-extern crate parster;
+extern crate nomster;
 
 #[macro_use]
 extern crate structopt;
@@ -7,11 +7,10 @@ use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
-#[structopt(name = "main")]
 struct Opt {
-    #[structopt(name = "INFILE", help = "webster raw file (dos format)", parse(from_os_str))]
+    #[structopt(name = "INFILE", help = "input file in dos format", parse(from_os_str))]
     input: PathBuf,
-    #[structopt(name = "OUTFILE", help = "patched output (overwrites input if not given)",
+    #[structopt(name = "OUTFILE", help = "output path (overwrites INFILE if not given)",
                 parse(from_os_str))]
     output: Option<PathBuf>,
 }
@@ -26,6 +25,6 @@ fn write_unix(contents: &str, output: &Path) -> Result<(), std::io::Error> {
 fn main() {
     let opt = Opt::from_args();
     let output = opt.output.as_ref().unwrap_or(&opt.input);
-    let contents = parster::read_dos(&opt.input).unwrap();
+    let contents = nomster::read_dos(&opt.input).unwrap();
     write_unix(&contents, output).unwrap();
 }

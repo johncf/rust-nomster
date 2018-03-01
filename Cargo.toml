@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["johncf <johncf@protonmail.com>"]
 
 [lib]
-name = "parster"
+name = "nomster"
 path = "src/lib.rs"
 
 [[bin]]
@@ -13,8 +13,8 @@ path = "src/bin/sample.rs"
 required-features = ["binaries"]
 
 [[bin]]
-name = "conv2utf8"
-path = "src/bin/conv2utf8.rs"
+name = "dos2unix"
+path = "src/bin/dos2unix.rs"
 required-features = ["binaries", "dosformat"]
 
 [[bin]]
