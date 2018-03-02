@@ -12,23 +12,11 @@ name = "sample"
 path = "src/bin/sample.rs"
 required-features = ["binaries"]
 
-[[bin]]
-name = "dos2unix"
-path = "src/bin/dos2unix.rs"
-required-features = ["binaries", "dosformat"]
-
-[[bin]]
-name = "patch-004"
-path = "src/bin/patch-004.rs"
-required-features = ["binaries"]
-
 [features]
 default = ["binaries"]
-dosformat = ["encoding"]
 binaries = ["structopt"]
 
 [dependencies]
 nom = "4.0.0-beta1"
 
-encoding = { version = "0.2", optional = true }
 structopt = { version = "0.2", optional = true }
