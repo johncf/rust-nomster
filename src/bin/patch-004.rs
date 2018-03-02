@@ -21,7 +21,7 @@ named!(till_hwhw<&str, &str>, take_until!("<hw><hw>"));
 named!(till_hw<&str, &str>, take_until!("<hw>"));
 named!(till_curly<&str, &str>, is_not!("}"));
 named!(till_linebreak<&str, &str>, is_not!("\n"));
-named!(hw_proper<&str, (&str, &str, &str)>, tuple!(tag!("<hw>"), is_not!("<>"), tag!("</hw>")));
+named!(hw_proper<&str, (&str, &str, &str)>, tuple!(tag!("<hw>"), take_until!("</hw>"), tag!("</hw>")));
 
 fn patch(mut contents: &str, output: &Path) -> Result<(), std::io::Error> {
     use std::io::Write;
