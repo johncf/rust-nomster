@@ -6,7 +6,7 @@ extern crate nom;
 #[macro_use]
 extern crate structopt;
 
-use nom::digit1;
+use nomster::parser::filepos_def;
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
@@ -17,15 +17,6 @@ struct Opt {
     #[structopt(name = "OUTFILE", help = "patched output (default: overwrite)", parse(from_os_str))]
     output: Option<PathBuf>,
 }
-
-named!(filepos_def<&str, u32>,
-       delimited!(
-           tag!("<a "),
-           delimited!(
-               tag!("id=\"filepos"),
-               map!(digit1, |num| num.parse().unwrap()),
-               tag!("\"")),
-           tag!(" />")));
 
 named!(filepos_deflist<&str, Vec<u32>>,
        fold_many0!(filepos_def, Vec::new(), |mut acc: Vec<_>, id: u32| {

@@ -17,6 +17,11 @@ name = "patch-002"
 path = "src/bin/patch-002.rs"
 required-features = ["binaries"]
 
+[[bin]]
+name = "max-filepos"
+path = "src/bin/max-filepos.rs"
+required-features = ["binaries"]
+
 [features]
 default = ["binaries"]
 binaries = ["structopt"]

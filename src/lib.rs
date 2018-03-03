@@ -5,7 +5,7 @@ use std::io::{Error, Read};
 use std::fs::File;
 use std::path::Path;
 
-mod parser;
+pub mod parser;
 
 pub use parser::parse;
 
