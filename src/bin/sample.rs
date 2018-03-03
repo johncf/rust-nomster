@@ -14,6 +14,6 @@ struct Opt {
 
 fn main() {
     let opt = Opt::from_args();
-    let contents = nomster::read_unix(&opt.input).unwrap();
+    let contents = nomster::read_file(&opt.input).unwrap();
     nomster::parse(&contents);
 }

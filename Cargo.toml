@@ -12,6 +12,11 @@ name = "sample"
 path = "src/bin/sample.rs"
 required-features = ["binaries"]
 
+[[bin]]
+name = "patch-002"
+path = "src/bin/patch-002.rs"
+required-features = ["binaries"]
+
 [features]
 default = ["binaries"]
 binaries = ["structopt"]

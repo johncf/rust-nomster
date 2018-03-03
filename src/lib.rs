@@ -9,7 +9,7 @@ mod parser;
 
 pub use parser::parse;
 
-pub fn read_unix<P: AsRef<Path>>(path: P) -> Result<String, Error> {
+pub fn read_file<P: AsRef<Path>>(path: P) -> Result<String, Error> {
     let mut contents = String::with_capacity(2 << 20);
     File::open(path)?.read_to_string(&mut contents)?;
     Ok(contents)

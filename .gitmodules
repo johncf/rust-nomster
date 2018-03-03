@@ -1,0 +1,3 @@
+[submodule "webster2"]
+	path = webster2
+	url = git@github.com:johncf/webster-2.1-html.git
