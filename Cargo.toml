@@ -33,5 +33,6 @@ binaries = ["structopt"]
 
 [dependencies]
 nom = "4.0.0-beta1"
+regex = "0.2"
 
 structopt = { version = "0.2", optional = true }
