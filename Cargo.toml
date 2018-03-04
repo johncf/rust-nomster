@@ -23,6 +23,11 @@ path = "src/bin/patch-003.rs"
 required-features = ["binaries"]
 
 [[bin]]
+name = "check-links"
+path = "src/bin/check-links.rs"
+required-features = ["binaries"]
+
+[[bin]]
 name = "max-filepos"
 path = "src/bin/max-filepos.rs"
 required-features = ["binaries"]

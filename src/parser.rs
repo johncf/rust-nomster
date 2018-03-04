@@ -9,16 +9,45 @@ pub struct RawEntry<'a> {
     pub extras: &'a str,
 }
 
+pub enum FilePos<'a> {
+    Def(u32),
+    Ref(u32, &'a str),
+    RefUnk(&'a str),
+}
+
 named!(entry_start<&str, &str>, take_until!("<idx:entry>"));
+
+named!(pub filepos_num<&str, u32>, map!(digit1, |num| num.parse().unwrap()));
+
+named!(pub filepos_ref_unk<&str, &str>,
+       do_parse!(
+           tag!("<a filepos=XXXXXXXXXX >") >>
+           text: take_until_and_consume!("</a>") >>
+           ( text )
+      ));
+
+named!(pub filepos_ref<&str, (u32, &str)>,
+       do_parse!(
+           tag!("<a href=\"#filepos") >>
+           filepos: filepos_num >>
+           tag!("\" >") >>
+           text: take_until_and_consume!("</a>") >>
+           ( (filepos, text) )
+      ));
 
 named!(pub filepos_def<&str, u32>,
        delimited!(
            tag!("<a "),
            delimited!(
                tag!("id=\"filepos"),
-               map!(digit1, |num| num.parse().unwrap()),
+               filepos_num,
                tag!("\"")),
            tag!(" />")));
+
+named!(pub a_tag<&str, FilePos>,
+       alt!(map!(filepos_def, |fp| FilePos::Def(fp)) |
+            map!(filepos_ref, |(fp, text)| FilePos::Ref(fp, text)) |
+            map!(filepos_ref_unk, |text| FilePos::RefUnk(text))));
 
 named!(pre_entry<&str, &str>,
        ws!(delimited!(
@@ -58,5 +87,21 @@ pub fn next_entry(contents: &str) -> Option<(&str, Result<RawEntry, (&str, &str)
         }
     } else {
         None
+    }
+}
+
+pub fn strip_stress(word: &str) -> String {
+    word.replace(|c| c == '´' || c == '•', "")
+}
+
+#[cfg(test)]
+mod test {
+    use super::strip_stress;
+
+    #[test]
+    fn strip_stress_test() {
+        assert_eq!(strip_stress("Law´giv•er"), "Lawgiver");
+        assert_eq!(strip_stress("Zöll´ner’s lines"), "Zöllner’s lines");
+        assert_eq!(strip_stress("Zee´man ef•fect´"), "Zeeman effect");
     }
 }
