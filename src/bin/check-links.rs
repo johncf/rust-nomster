@@ -40,7 +40,7 @@ fn check_link_diversity(mut contents: &str) {
 
 named!(start<&str, &str>, take_until!("<idx:entry>"));
 named!(next_link<&str, &str>, take_until!("<a "));
-named!(bigb<&str, &str>, delimited!(tag!("<b>"), take_until!("</b>"), tag!("</b>")));
+named!(strong<&str, &str>, delimited!(tag!("<strong>"), take_until!("</strong>"), tag!("</strong>")));
 
 fn map_smart_insert(map: &mut BTreeMap<u32, (String, bool)>, key: u32, value: &str, def: bool) -> bool {
     let word = strip_stress(value).to_lowercase();
@@ -64,7 +64,7 @@ fn check_link_smartness(contents: &str) {
             contents = remaining;
             match filepos {
                 FilePos::Def(fp) => {
-                    if let Ok((_, word)) = bigb(remaining) {
+                    if let Ok((_, word)) = strong(remaining) {
                         smart_count += map_smart_insert(&mut id_map, fp, word, true) as u32;
                     }
                 }

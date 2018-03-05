@@ -61,12 +61,10 @@ named!(pre_entry<&str, &str>,
 named!(main_entry<&str, (&str, Option<u32>, &str)>,
        do_parse!(
            tag!("<p>") >>
-               tag!("<big>") >>
-                   filepos: opt!(filepos_def) >>
-                   tag!("<b>") >>
-                       word: take_until!("</b>") >>
-                   tag!("</b>") >>
-               tag!("</big>") >>
+               filepos: opt!(filepos_def) >>
+               tag!("<strong>") >>
+                   word: take_until!("</strong>") >>
+               tag!("</strong>") >>
                body: take_until!("</p>") >>
            tag!("</p>") >>
            ( (word, filepos, body) )
