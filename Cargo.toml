@@ -32,6 +32,11 @@ name = "max-filepos"
 path = "src/bin/max-filepos.rs"
 required-features = ["binaries"]
 
+[[bin]]
+name = "unicode-list"
+path = "src/bin/unicode-list.rs"
+required-features = ["binaries"]
+
 [features]
 default = ["binaries"]
 binaries = ["structopt"]
