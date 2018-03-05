@@ -42,22 +42,17 @@ named!(start<&str, &str>, take_until!("<idx:entry>"));
 named!(next_link<&str, &str>, take_until!("<a "));
 named!(bigb<&str, &str>, delimited!(tag!("<b>"), take_until!("</b>"), tag!("</b>")));
 
-fn map_smart_insert(map: &mut BTreeMap<u32, String>, key: u32, value: &str, replace: bool) -> bool {
+fn map_smart_insert(map: &mut BTreeMap<u32, (String, bool)>, key: u32, value: &str, def: bool) -> bool {
     let word = strip_stress(value).to_lowercase();
-    if map.contains_key(&key) {
-        let ex_word = if replace {
-            map.insert(key, word.clone()).unwrap()
-        } else {
-            map.get(&key).unwrap().clone()
-        };
-        if ex_word != word {
-            println!("smart link? {:?} {:?}", ex_word, word);
-            return true;
-        }
-    } else {
-        map.insert(key, word);
+    let (is_diff, do_insert) = map.get(&key).map_or((false, true),
+                                                    |&(ref w, d)| (w != &word, def || !d));
+    if is_diff {
+        println!("smart link? {:?} {:?}", map.get(&key).unwrap().0, word);
     }
-    return false;
+    if do_insert {
+        map.insert(key, (word, def));
+    }
+    return is_diff;
 }
 
 fn check_link_smartness(contents: &str) {
@@ -71,8 +66,6 @@ fn check_link_smartness(contents: &str) {
                 FilePos::Def(fp) => {
                     if let Ok((_, word)) = bigb(remaining) {
                         smart_count += map_smart_insert(&mut id_map, fp, word, true) as u32;
-                    } else {
-                        eprintln!("bad link: remaining {} bytes", remaining.len());
                     }
                 }
                 FilePos::Ref(fp, text) => {
