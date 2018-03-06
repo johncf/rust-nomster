@@ -60,37 +60,29 @@ pub fn next_entry(contents: &str) -> Option<(&str, Result<RawEntry, &str>, &str)
     }
 }
 
-fn is_stress(c: char) -> bool {
-    c == '´' || c == '•'
-}
-
 pub fn strip_stress(word: &str) -> String {
-    word.replace(is_stress, "")
+    word.replace(|c| c == '´' || c == '•', "")
 }
 
-/// also strips off stress/accent markers
-pub fn to_ascii(word: &str) -> String {
-    let s: String = word.chars()
-                        .filter(|&c| !is_stress(c))
-                        .map(|c| match c as u32 {
-                            199 => 'C', 224 => 'a', 225 => 'a', 226 => 'a',
-                            227 => 'a', 228 => 'a', 231 => 'a', 232 => 'e',
-                            234 => 'e', 235 => 'e', 238 => 'i', 239 => 'i',
-                            241 => 'n', 243 => 'o', 244 => 'o', 246 => 'o',
-                            249 => 'u', 251 => 'u', 252 => 'u', 8217=> '\'',
-                            _ => c,
-                        }).collect();
-    s.replace('\u{0152}', "OE").replace('\u{0153}', "oe")
-}
-
-/// applies to_ascii, to_lowercase, replace spaces with underscores, remove quotes
-pub fn to_id(word: &str) -> String {
-    to_ascii(word).to_lowercase().replace(' ', "_").replace('\'', "")
+/// lexicographic translation to ascii
+pub fn word_to_ascii(word: &str) -> String {
+    let mut word = strip_stress(word);
+    word = word.chars().map(|c| match c as u32 {
+                                    199 => 'C', 224 => 'a', 225 => 'a', 226 => 'a',
+                                    227 => 'a', 228 => 'a', 231 => 'a', 232 => 'e',
+                                    234 => 'e', 235 => 'e', 238 => 'i', 239 => 'i',
+                                    241 => 'n', 243 => 'o', 244 => 'o', 246 => 'o',
+                                    249 => 'u', 251 => 'u', 252 => 'u', 8217 => '\'',
+                                    _ => c,
+                                }).collect();
+    word = word.replace('\u{0152}', "OE").replace('\u{0153}', "oe");
+    assert!(word.is_ascii());
+    word
 }
 
 #[cfg(test)]
 mod test {
-    use super::{strip_stress, to_ascii, to_id};
+    use super::{strip_stress, word_to_ascii};
 
     #[test]
     fn strip_stress_test() {
@@ -101,18 +93,10 @@ mod test {
     }
 
     #[test]
-    fn to_ascii_test() {
-        assert_eq!(to_ascii("A•mœ´ba"), "Amoeba");
-        assert_eq!(to_ascii("Law´giv•er"), "Lawgiver");
-        assert_eq!(to_ascii("Zöll´ner’s Lines"), "Zollner's Lines");
-        assert_eq!(to_ascii("Zee´man-ef•fect´"), "Zeeman-effect");
-    }
-
-    #[test]
-    fn to_id_test() {
-        assert_eq!(to_id("A•mœ´ba"), "amoeba");
-        assert_eq!(to_id("Law´giv•er"), "lawgiver");
-        assert_eq!(to_id("Zöll´ner’s Lines"), "zollners_lines");
-        assert_eq!(to_id("Zee´man-ef•fect´"), "zeeman-effect");
+    fn word_to_ascii_test() {
+        assert_eq!(word_to_ascii("A•mœ´ba"), "Amoeba");
+        assert_eq!(word_to_ascii("Law´giv•er"), "Lawgiver");
+        assert_eq!(word_to_ascii("Zöll´ner’s Lines"), "Zollner's Lines");
+        assert_eq!(word_to_ascii("Zee´man-ef•fect´"), "Zeeman-effect");
     }
 }

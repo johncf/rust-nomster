@@ -20,10 +20,10 @@ fn main() {
     while let Some((skipped, entry, next)) = parser::next_entry(contents) {
         match entry {
             Ok(entry) => {
-                let idified = parser::to_id(entry.word);
-                assert!(idified.is_ascii());
+                let ascii = parser::word_to_ascii(entry.word);
+                assert!(ascii.is_ascii());
                 println!("{} (skipped {} bytes)", entry.word, skipped.len());
-                println!("  idified: {}", idified);
+                println!("  ascii: {}", ascii);
                 println!("  tocid {:?}", entry.tocid);
                 println!("  body {} bytes", entry.body.len());
                 println!("  extras {} bytes", entry.extras.len());
