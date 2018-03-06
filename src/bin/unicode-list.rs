@@ -19,13 +19,20 @@ struct Opt {
     input: PathBuf,
 }
 
-named!(next_entry<&str, &str>, take_until!("<strong>"));
-named!(strong_word<&str, &str>, delimited!(tag!("<strong>"), take_until!("</strong>"), tag!("</strong>")));
+named!(next_entry<&str, &str>, take_until!("<big><b>"));
+named!(entry_word<&str, &str>, delimited!(tag!("<big><b>"), take_until!("</b>"), tag!("</b></big>")));
 
 fn unicode_list(mut contents: &str) {
     let mut non_ascii_set = BTreeMap::new();
     while let Ok((remaining, _)) = next_entry(contents) {
-        let (remaining, word) = strong_word(remaining).unwrap();
+        let entry_res = entry_word(remaining);
+        if entry_res.is_err() {
+            let lf_index = remaining.find('\n').unwrap();
+            eprintln!("broke at {:?}", &remaining[..lf_index]);
+            contents = &remaining[lf_index..];
+            continue;
+        }
+        let (remaining, word) = entry_res.unwrap();
         contents = remaining;
         let word = parser::strip_stress(word);
         let mut u_iter = word.chars().map(|c| c as u32).peekable();

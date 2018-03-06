@@ -20,13 +20,13 @@ fn main() {
         match entry {
             Ok(entry) => {
                 println!("{} (skipped {} bytes)", entry.word, skipped.len());
-                println!("  filepos {:?}", entry.filepos);
+                println!("  tocid {:?}", entry.tocid);
                 println!("  body {} bytes", entry.body.len());
                 println!("  extras {} bytes", entry.extras.len());
             }
-            Err((word, entry_str)) => {
-                println!("{} (skipped {} bytes)", word, skipped.len());
-                println!("  parsing failed; {} bytes", entry_str.len());
+            Err(entry_str) => {
+                println!("--parsing failed-- (skipped {} bytes)", skipped.len());
+                println!("  entry size {} bytes", entry_str.len());
             }
         }
         contents = next;

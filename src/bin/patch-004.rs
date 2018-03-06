@@ -25,7 +25,7 @@ struct SmallWords<'a> {
 named!(small_words<&str, SmallWords>,
        do_parse!(
            word: delimited!(
-               tag!("<small style=\"color: blue\"><b style=\"color: blue\">"),
+               tag!("<small><b>"),
                take_until!("</b>"),
                tag!("</b></small>")) >>
            alts: take_until!("}") >>
@@ -45,11 +45,13 @@ named!(skip_line<&str, &str>, take_until!("\n"));
 fn patch(mut contents: &str, output: &Path) -> Result<(), std::io::Error> {
     use std::io::Write;
     let mut patched = String::with_capacity(contents.len());
+    let mut toc_id = 0x30000;
     while let Ok((remaining, consumed)) = next(contents) {
         patched.push_str(consumed);
         if let Ok((remaining, words)) = small_words_in_curly(remaining) {
             contents = remaining;
-            patched.push_str(&format!("</p><idx:entry>\n<idx:orth value=\"{word}\" data-mark=\"new\">\n</idx:entry>\n<p><big><b>{word}</b></big>{alts}", word = words.word, alts = words.alts));
+            patched.push_str(&format!("</p>\n<p id=\"MBP_TOC_{id:X}\"><big><b>{word}</b></big>{alts}", id = toc_id, word = words.word, alts = words.alts));
+            toc_id += 1;
         } else if let Ok((remaining, line)) = skip_line(remaining) {
             contents = remaining;
             eprintln!(">>> badly formatted curly: {:?}", &line);

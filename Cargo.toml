@@ -13,29 +13,19 @@ path = "src/bin/sample.rs"
 required-features = ["binaries"]
 
 [[bin]]
-name = "patch-002"
-path = "src/bin/patch-002.rs"
-required-features = ["binaries"]
-
-[[bin]]
-name = "patch-003"
-path = "src/bin/patch-003.rs"
-required-features = ["binaries"]
-
-[[bin]]
-name = "check-links"
-path = "src/bin/check-links.rs"
-required-features = ["binaries"]
-
-[[bin]]
-name = "max-filepos"
-path = "src/bin/max-filepos.rs"
+name = "patch-004"
+path = "src/bin/patch-004.rs"
 required-features = ["binaries"]
 
 [[bin]]
 name = "unicode-list"
 path = "src/bin/unicode-list.rs"
 required-features = ["binaries"]
+
+[[bin]]
+name = "dos2unix"
+path = "src/bin/dos2unix.rs"
+required-features = ["binaries", "encoding"]
 
 [features]
 default = ["binaries"]
@@ -45,4 +35,5 @@ binaries = ["structopt"]
 nom = "4.0.0-beta1"
 regex = "0.2"
 
+encoding = { version = "0.2", optional = true }
 structopt = { version = "0.2", optional = true }
