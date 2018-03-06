@@ -3,6 +3,7 @@ extern crate nomster;
 #[macro_use]
 extern crate structopt;
 
+use nomster::parser;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -16,10 +17,13 @@ fn main() {
     let opt = Opt::from_args();
     let contents = nomster::read_file(&opt.input).unwrap();
     let mut contents = &*contents;
-    while let Some((skipped, entry, next)) = nomster::parser::next_entry(contents) {
+    while let Some((skipped, entry, next)) = parser::next_entry(contents) {
         match entry {
             Ok(entry) => {
+                let idified = parser::to_id(entry.word);
+                assert!(idified.is_ascii());
                 println!("{} (skipped {} bytes)", entry.word, skipped.len());
+                println!("  idified: {}", idified);
                 println!("  tocid {:?}", entry.tocid);
                 println!("  body {} bytes", entry.body.len());
                 println!("  extras {} bytes", entry.extras.len());
