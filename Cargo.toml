@@ -54,7 +54,6 @@ g673 = ["structopt", "lazy_static"]
 
 [dependencies]
 nom = "4.0.0-beta1"
-regex = "0.2"
 
 encoding = { version = "0.2", optional = true }
 lazy_static = { version = "1.0", optional = true }

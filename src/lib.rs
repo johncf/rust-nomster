@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate nom;
-extern crate regex;
 
 use std::io::{Error, Read};
 use std::fs::File;
