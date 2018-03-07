@@ -4,3 +4,6 @@
 [submodule "webster3"]
 	path = webster3
 	url = git@github.com:johncf/webster-2.0-html.git
+[submodule "webster1"]
+	path = webster1
+	url = git@github.com:johncf/gutenberg-673.git
