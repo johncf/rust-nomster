@@ -8,9 +8,104 @@ pub struct RawEntry<'a> {
     pub extras: &'a str,
 }
 
+#[derive(Debug)]
+pub struct TaggedEntry<'a> {
+    pub tocid: u32,
+    pub tags: Vec<EntryTag<'a>>,
+}
+
+#[derive(Debug)]
+pub enum EntryTag<'a> {
+    Para(Vec<ParaTag<'a>>),
+    Pre(&'a str),
+}
+
+#[derive(Debug)]
+pub enum ParaTag<'a> {
+    Strong(&'a str),
+    Dquotes(Vec<SimpleTag<'a>>),
+    Boxed(Vec<SimpleTag<'a>>),
+    Simple(Vec<SimpleTag<'a>>),
+}
+
+#[derive(Debug)]
+pub enum SimpleTag<'a> {
+    Bold(&'a str),
+    BoxedPlain(&'a str),
+    BreakTag,
+    Emph(&'a str),
+    Plain(&'a str),
+    SmallB(&'a str),
+    Sub(&'a str),
+    Sup(&'a str),
+    WordRef(u32, &'a str),
+}
+
 fn toc_u32(toc: &str) -> u32 {
     u32::from_str_radix(toc, 16).unwrap()
 }
+
+named!(bold<&str, SimpleTag>,
+       map!(delimited!(tag!("<b>"), is_not!("<>"), tag!("</b>")),
+            |s| SimpleTag::Bold(s)));
+named!(boxed_plain<&str, SimpleTag>,
+       map!(delimited!(tag!("["), opt!(is_not!("<>[]")), tag!("]")),
+            |s_o| SimpleTag::BoxedPlain(s_o.unwrap_or(""))));
+named!(break_tag<&str, SimpleTag>,
+       map!(tag!("<br>"), |_| SimpleTag::BreakTag));
+named!(emph<&str, SimpleTag>,
+       map!(delimited!(tag!("<i>"), take_until!("</i>"), tag!("</i>")),
+            |s| SimpleTag::Emph(s)));
+named!(small_b<&str, SimpleTag>,
+       map!(delimited!(tag!("<small><b>"), is_not!("<>"), tag!("</b></small>")),
+            |s| SimpleTag::SmallB(s)));
+named!(sub<&str, SimpleTag>,
+       map!(delimited!(tag!("<sub>"), is_not!("<>"), tag!("</sub>")),
+            |s| SimpleTag::Sub(s)));
+named!(sup<&str, SimpleTag>,
+       map!(delimited!(tag!("<sup>"), is_not!("<>"), tag!("</sup>")),
+            |s| SimpleTag::Sup(s)));
+named!(plain<&str, SimpleTag>,
+       map!(is_not!("<>[]“”"), |s| SimpleTag::Plain(s)));
+named!(plain_nobox<&str, SimpleTag>,
+       map!(is_not!("<>“”"), |s| SimpleTag::Plain(s)));
+named!(word_ref<&str, SimpleTag>,
+       map!(toc_link, |(id, text)| SimpleTag::WordRef(id, text)));
+
+named!(quote_tags<&str, Vec<SimpleTag>>,
+       many1!(alt!(plain_nobox | emph | break_tag)));
+
+named!(boxed_tags<&str, Vec<SimpleTag>>,
+       many1!(alt!(plain | emph | bold | word_ref | small_b | boxed_plain)));
+
+named!(simple_tags<&str, Vec<SimpleTag>>,
+       many1!(alt!(plain | emph | bold | word_ref | small_b | break_tag | boxed_plain | sub | sup)));
+
+named!(strong<&str, ParaTag>,
+       map!(delimited!(tag!("<strong>"), is_not!("<>"), tag!("</strong>")),
+            |s| ParaTag::Strong(s)));
+named!(dquotes<&str, ParaTag>,
+       map!(delimited!(tag!("“"), quote_tags, tag!("”")),
+            |v| ParaTag::Dquotes(v)));
+named!(boxed<&str, ParaTag>,
+       map!(delimited!(tag!("["), boxed_tags, tag!("]")),
+            |v| ParaTag::Boxed(v)));
+named!(simple<&str, ParaTag>,
+       map!(simple_tags, |v| ParaTag::Simple(v)));
+
+named!(pub parse_entry2<&str, TaggedEntry>,
+       do_parse!(
+           tocid: div_open >>
+           tags: many1!(
+               alt!(map!(delimited!(tag!("<p>"),
+                                    many1!(alt!(simple | dquotes | boxed | strong)),
+                                    tag!("</p>")),
+                         |v| EntryTag::Para(v)) |
+                    map!(delimited!(tag!("<pre>"),
+                                    take_until!("</pre>"),
+                                    tag!("</pre>")),
+                         |s| EntryTag::Pre(s)))) >>
+           ( TaggedEntry { tocid, tags } )));
 
 named!(entry_start<&str, &str>, take_until!("<div id=\"MBP_"));
 
@@ -19,7 +114,8 @@ named!(pub toc_link<&str, (u32, &str)>,
            tag!("<a href=\"#MBP_TOC_") >>
            tocid: map!(hex_digit, toc_u32) >>
            tag!("\">") >>
-           text: take_until_and_consume!("</a>") >>
+           text: is_not!("<>") >>
+           tag!("</a>") >>
            ( (tocid, text) )
       ));
 
@@ -53,6 +149,21 @@ pub fn next_entry(contents: &str) -> Option<(&str, Result<RawEntry, &str>, &str)
         let remaining = &remaining[end_idx..];
         if let Ok((_, entry)) = parse_entry(entry_str) {
             Some((skipped, Ok(entry), remaining))
+        } else {
+            Some((skipped, Err(entry_str), remaining))
+        }
+    } else {
+        None
+    }
+}
+
+pub fn next_entry2(contents: &str) -> Option<(&str, Result<TaggedEntry, &str>, &str)> {
+    if let Ok((remaining, skipped)) = entry_start(contents) {
+        let end_idx = remaining.find("</div>").expect("entry did not end properly") + 6;
+        let entry_str = &remaining[..end_idx];
+        let remaining = &remaining[end_idx..];
+        if let Ok((_, entry_tags)) = parse_entry2(entry_str) {
+            Some((skipped, Ok(entry_tags), remaining))
         } else {
             Some((skipped, Err(entry_str), remaining))
         }
