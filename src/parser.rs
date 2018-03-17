@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use nom::hex_digit;
 
 #[derive(Debug)]
@@ -39,6 +40,41 @@ pub enum SimpleTag<'a> {
     Sub(&'a str),
     Sup(&'a str),
     WordRef(u32, &'a str),
+}
+
+#[derive(Debug)]
+pub enum SimplePart<'a> {
+    AltForm(Cow<'a, str>),
+    BreakTag,
+    Emph(&'a str),
+    EmphRich(Vec<SimplePart<'a>>),
+    PoS(&'a str),
+    Separator(char),
+    Sub(&'a str),
+    Sup(&'a str),
+    TextPlain(&'a str),
+    WordRef(u32, &'a str),
+}
+
+#[derive(Debug)]
+pub enum ParaPart<'a> {
+    BoxEtym(Vec<SimplePart<'a>>),
+    BoxWordForm(Vec<SimplePart<'a>>),
+    BoxOther(Vec<SimplePart<'a>>),
+    Collocation(&'a str),
+    Field(&'a str),
+    Sense(u32),
+    Simple(Vec<SimplePart<'a>>),
+    SubSense(char),
+    SynMark,
+    //Pronounce(&'a str),
+}
+
+#[derive(Debug)]
+pub enum EntryPart<'a> {
+    Blockquote(Vec<SimplePart<'a>>, Option<&'a str>),
+    Para(Vec<ParaPart<'a>>),
+    PreRaw(&'a str),
 }
 
 fn toc_u32(toc: &str) -> u32 {
