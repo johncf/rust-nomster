@@ -1,4 +1,5 @@
 use nom::hex_digit;
+use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug)]
 pub struct RawEntry<'a> {
@@ -12,12 +13,46 @@ pub struct RawEntry<'a> {
 pub struct TaggedEntry<'a> {
     pub tocid: u32,
     pub tags: Vec<EntryTag<'a>>,
+    pub word: &'a str,
+}
+
+impl<'a> Display for TaggedEntry<'a> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "<div id=\"MBP_TOC_{id:X}\" data-ascii=\"{word}\">\n",
+               id = self.tocid, word = self.word)?;
+        for t in &self.tags {
+            write!(f, "{}", t)?;
+        }
+        write!(f, "</div>\n")
+    }
 }
 
 #[derive(Debug)]
 pub enum EntryTag<'a> {
     Para(Vec<ParaTag<'a>>),
     Pre(&'a str),
+    LineBreak,
+}
+
+impl<'a> Display for EntryTag<'a> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match *self {
+            EntryTag::Para(ref tags) => {
+                write!(f, "<p>")?;
+                for t in tags {
+                    write!(f, "{}", t)?;
+                }
+                write!(f, "</p>\n")?;
+            }
+            EntryTag::Pre(raw_html) => {
+                write!(f, "<pre>{}</pre>", raw_html)?;
+            }
+            EntryTag::LineBreak => {
+                write!(f, "\n")?;
+            }
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug)]
@@ -26,6 +61,36 @@ pub enum ParaTag<'a> {
     Dquotes(Vec<SimpleTag<'a>>),
     Boxed(Vec<SimpleTag<'a>>),
     Simple(Vec<SimpleTag<'a>>),
+}
+
+impl<'a> Display for ParaTag<'a> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match *self {
+            ParaTag::Strong(word) => {
+                write!(f, "<strong>{}</strong>", word)?;
+            }
+            ParaTag::Dquotes(ref tags) => {
+                write!(f, "“")?;
+                for t in tags {
+                    write!(f, "{}", t)?;
+                }
+                write!(f, "”")?;
+            }
+            ParaTag::Boxed(ref tags) => {
+                write!(f, "[")?;
+                for t in tags {
+                    write!(f, "{}", t)?;
+                }
+                write!(f, "]")?;
+            }
+            ParaTag::Simple(ref tags) => {
+                for t in tags {
+                    write!(f, "{}", t)?;
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug)]
@@ -39,6 +104,41 @@ pub enum SimpleTag<'a> {
     Sub(&'a str),
     Sup(&'a str),
     WordRef(u32, &'a str),
+}
+
+impl<'a> Display for SimpleTag<'a> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match *self {
+            SimpleTag::Bold(text) => {
+                write!(f, "<b>{}</b>", text)?;
+            }
+            SimpleTag::BoxedPlain(text) => {
+                write!(f, "[{}]", text)?;
+            }
+            SimpleTag::BreakTag => {
+                write!(f, "<br>")?;
+            }
+            SimpleTag::Emph(text) => {
+                write!(f, "<i>{}</i>", text)?;
+            }
+            SimpleTag::Plain(text) => {
+                write!(f, "{}", text)?;
+            }
+            SimpleTag::SmallB(text) => {
+                write!(f, "<small><b>{}</b></small>", text)?;
+            }
+            SimpleTag::Sub(text) => {
+                write!(f, "<sub>{}</sub>", text)?;
+            }
+            SimpleTag::Sup(text) => {
+                write!(f, "<sup>{}</sup>", text)?;
+            }
+            SimpleTag::WordRef(id, text) => {
+                write!(f, "<a href=\"#MBP_TOC_{:X}\">{}</a>", id, text)?;
+            }
+        }
+        Ok(())
+    }
 }
 
 fn toc_u32(toc: &str) -> u32 {
@@ -95,17 +195,19 @@ named!(simple<&str, ParaTag>,
 
 named!(pub parse_entry2<&str, TaggedEntry>,
        do_parse!(
-           tocid: div_open >>
+           divo: div_open >>
            tags: many1!(
                alt!(map!(delimited!(tag!("<p>"),
                                     many1!(alt!(simple | dquotes | boxed | strong)),
-                                    tag!("</p>")),
+                                    tag!("</p>\n")),
                          |v| EntryTag::Para(v)) |
                     map!(delimited!(tag!("<pre>"),
                                     take_until!("</pre>"),
                                     tag!("</pre>")),
-                         |s| EntryTag::Pre(s)))) >>
-           ( TaggedEntry { tocid, tags } )));
+                         |s| EntryTag::Pre(s)) |
+                    map!(tag!("\n"), |_| EntryTag::LineBreak))) >>
+           tag!("</div>\n") >>
+           ( TaggedEntry { tocid: divo.0, tags: tags, word: divo.1 } )));
 
 named!(entry_start<&str, &str>, take_until!("<div id=\"MBP_"));
 
@@ -119,18 +221,18 @@ named!(pub toc_link<&str, (u32, &str)>,
            ( (tocid, text) )
       ));
 
-named!(div_open<&str, u32>,
+named!(div_open<&str, (u32, &str)>,
        do_parse!(
            tag!("<div id=\"MBP_TOC_") >>
            tocid: map!(hex_digit, toc_u32) >>
-           tag!("\" data-ascii=") >>
-           take_until_and_consume!(">\n") >>
-           ( tocid )
+           tag!("\" data-ascii=\"") >>
+           word: take_until_and_consume!("\">\n") >>
+           ( tocid, word )
       ));
 
 named!(pub parse_entry<&str, RawEntry>,
        do_parse!(
-           tocid: div_open >>
+           tocid: map!(div_open, |(tocid, _)| tocid) >>
            tag!("<p>") >>
                tag!("<strong>") >>
                    word: take_until!("</strong>") >>
@@ -159,10 +261,11 @@ pub fn next_entry(contents: &str) -> Option<(&str, Result<RawEntry, &str>, &str)
 
 pub fn next_entry2(contents: &str) -> Option<(&str, Result<TaggedEntry, &str>, &str)> {
     if let Ok((remaining, skipped)) = entry_start(contents) {
-        let end_idx = remaining.find("</div>").expect("entry did not end properly") + 6;
+        let end_idx = remaining.find("</div>\n").expect("entry did not end properly") + 7;
         let entry_str = &remaining[..end_idx];
         let remaining = &remaining[end_idx..];
-        if let Ok((_, entry_tags)) = parse_entry2(entry_str) {
+        if let Ok((empty, entry_tags)) = parse_entry2(entry_str) {
+            assert!(empty.is_empty());
             Some((skipped, Ok(entry_tags), remaining))
         } else {
             Some((skipped, Err(entry_str), remaining))
