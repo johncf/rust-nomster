@@ -60,6 +60,7 @@ pub enum ParaTag<'a> {
     Strong(&'a str),
     Dquotes(Vec<SimpleTag<'a>>),
     Boxed(Vec<SimpleTag<'a>>),
+    BoxedGrammar(Vec<SimpleTag<'a>>),
     Simple(Vec<SimpleTag<'a>>),
 }
 
@@ -76,7 +77,7 @@ impl<'a> Display for ParaTag<'a> {
                 }
                 write!(f, "”")?;
             }
-            ParaTag::Boxed(ref tags) => {
+            ParaTag::Boxed(ref tags) | ParaTag::BoxedGrammar(ref tags) => {
                 write!(f, "[")?;
                 for t in tags {
                     write!(f, "{}", t)?;
@@ -145,6 +146,46 @@ fn toc_u32(toc: &str) -> u32 {
     u32::from_str_radix(toc, 16).unwrap()
 }
 
+fn is_gram_marker(text: &str) -> bool {
+    let variants: &[&str] = &[
+        //"1st pers.", "2d pers.", "3d pers.",
+        //"a.",
+        //"adv.",
+        "compar.", "Compar.",
+        "dat.",
+        "imp.",
+        //"indic.",
+        "inf.",
+        //"n.",
+        "nom.",
+        "obj.",
+        "obs.", "Obs.",
+        "p. p.",
+        "p. pr.",
+        //"pass.",
+        "pl.",
+        "poss.", "Poss.",
+        //"prep.",
+        "pres.",
+        "pret.",
+        //"pron.",
+        "sing.", "Sing.",
+        //"subj.",
+        "superl.", "Superl.",
+        //"v.",
+        "v. i.",
+        "v. t.",
+        "vb. n.",
+    ];
+    for v in variants {
+        if text.starts_with(v) {
+            return true;
+        }
+    }
+    false
+}
+
+
 named!(bold<&str, SimpleTag>,
        map!(delimited!(tag!("<b>"), is_not!("<>"), tag!("</b>")),
             |s| SimpleTag::Bold(s)));
@@ -189,7 +230,10 @@ named!(dquotes<&str, ParaTag>,
             |v| ParaTag::Dquotes(v)));
 named!(boxed<&str, ParaTag>,
        map!(delimited!(tag!("["), boxed_tags, tag!("]")),
-            |v| ParaTag::Boxed(v)));
+            |v| match v[0] {
+                SimpleTag::Emph(text) if is_gram_marker(text) => ParaTag::BoxedGrammar(v),
+                _ => ParaTag::Boxed(v),
+            }));
 named!(simple<&str, ParaTag>,
        map!(simple_tags, |v| ParaTag::Simple(v)));
 
