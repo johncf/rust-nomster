@@ -23,6 +23,11 @@ path = "src/bin/patch-007.rs"
 required-features = ["binaries"]
 
 [[bin]]
+name = "patch-018"
+path = "src/bin/patch-018.rs"
+required-features = ["binaries"]
+
+[[bin]]
 name = "unicode-list"
 path = "src/bin/unicode-list.rs"
 required-features = ["binaries"]
