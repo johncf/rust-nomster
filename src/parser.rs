@@ -29,6 +29,7 @@ impl<'a> Display for TaggedEntry<'a> {
 
 #[derive(Debug)]
 pub enum EntryTag<'a> {
+    Blockquote(Vec<SimpleTag<'a>>, Option<&'a str>),
     Para(Vec<ParaTag<'a>>),
     Pre(&'a str),
     LineBreak,
@@ -37,6 +38,17 @@ pub enum EntryTag<'a> {
 impl<'a> Display for EntryTag<'a> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match *self {
+            EntryTag::Blockquote(ref tags, author_opt) => {
+                write!(f, "<blockquote>\n<p>")?;
+                for t in tags {
+                    write!(f, "{}", t)?;
+                }
+                write!(f, "</p>\n")?;
+                if let Some(author) = author_opt {
+                    write!(f, "\u{2015}<i>{}</i>", author)?;
+                }
+                write!(f, "</blockquote>\n")?;
+            }
             EntryTag::Para(ref tags) => {
                 write!(f, "<p>")?;
                 for t in tags {
