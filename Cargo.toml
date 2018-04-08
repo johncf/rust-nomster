@@ -12,25 +12,11 @@ name = "sample"
 path = "src/bin/sample.rs"
 required-features = ["binaries"]
 
-[[bin]]
-name = "patch-004"
-path = "src/bin/patch-004.rs"
-required-features = ["binaries"]
-
-[[bin]]
-name = "patch-007"
-path = "src/bin/patch-007.rs"
-required-features = ["binaries"]
-
-[[bin]]
-name = "patch-018"
-path = "src/bin/patch-018.rs"
-required-features = ["binaries"]
-
-[[bin]]
-name = "patch-019"
-path = "src/bin/patch-019.rs"
-required-features = ["binaries"]
+## patches in src/bin: "patch-004", "patch-007", "patch-018", "patch-019"
+#[[bin]]
+#name = "patch-xxx"
+#path = "src/bin/patch-xxx.rs"
+#required-features = ["binaries"]
 
 [[bin]]
 name = "unicode-list"

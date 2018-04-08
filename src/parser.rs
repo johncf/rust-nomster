@@ -70,7 +70,6 @@ impl<'a> Display for EntryTag<'a> {
 #[derive(Debug)]
 pub enum ParaTag<'a> {
     Strong(&'a str),
-    Dquotes(Vec<SimpleTag<'a>>),
     Boxed(Vec<SimpleTag<'a>>),
     BoxedGrammar(Vec<SimpleTag<'a>>),
     Simple(Vec<SimpleTag<'a>>),
@@ -81,13 +80,6 @@ impl<'a> Display for ParaTag<'a> {
         match *self {
             ParaTag::Strong(word) => {
                 write!(f, "<strong>{}</strong>", word)?;
-            }
-            ParaTag::Dquotes(ref tags) => {
-                write!(f, "“")?;
-                for t in tags {
-                    write!(f, "{}", t)?;
-                }
-                write!(f, "”")?;
             }
             ParaTag::Boxed(ref tags) | ParaTag::BoxedGrammar(ref tags) => {
                 write!(f, "[")?;
@@ -219,9 +211,9 @@ named!(sup<&str, SimpleTag>,
        map!(delimited!(tag!("<sup>"), is_not!("<>"), tag!("</sup>")),
             |s| SimpleTag::Sup(s)));
 named!(plain<&str, SimpleTag>,
-       map!(is_not!("<>[]“”"), |s| SimpleTag::Plain(s)));
+       map!(is_not!("<>[]"), |s| SimpleTag::Plain(s)));
 named!(plain_nobox<&str, SimpleTag>,
-       map!(is_not!("<>“”"), |s| SimpleTag::Plain(s)));
+       map!(is_not!("<>"), |s| SimpleTag::Plain(s)));
 named!(word_ref<&str, SimpleTag>,
        map!(toc_link, |(id, text)| SimpleTag::WordRef(id, text)));
 
@@ -237,9 +229,6 @@ named!(simple_tags<&str, Vec<SimpleTag>>,
 named!(strong<&str, ParaTag>,
        map!(delimited!(tag!("<strong>"), is_not!("<>"), tag!("</strong>")),
             |s| ParaTag::Strong(s)));
-named!(dquotes<&str, ParaTag>,
-       map!(delimited!(tag!("“"), quote_tags, tag!("”")),
-            |v| ParaTag::Dquotes(v)));
 named!(boxed<&str, ParaTag>,
        map!(delimited!(tag!("["), boxed_tags, tag!("]")),
             |v| match v[0] {
@@ -254,13 +243,21 @@ named!(pub parse_entry2<&str, TaggedEntry>,
            divo: div_open >>
            tags: many1!(
                alt!(map!(delimited!(tag!("<p>"),
-                                    many1!(alt!(simple | dquotes | boxed | strong)),
+                                    many1!(alt!(simple | boxed | strong)),
                                     tag!("</p>\n")),
                          |v| EntryTag::Para(v)) |
                     map!(delimited!(tag!("<pre>"),
                                     take_until!("</pre>"),
                                     tag!("</pre>")),
                          |s| EntryTag::Pre(s)) |
+                    map!(delimited!(tag!("<blockquote>\n"),
+                                    tuple!(
+                                        delimited!(tag!("<p>"), quote_tags, tag!("</p>\n")),
+                                        opt!(delimited!(tag!("\u{2015}<i>"),
+                                                        is_not!("<>"),
+                                                        tag!("</i>")))),
+                                    tag!("</blockquote>\n")),
+                         |(v, a_o)| EntryTag::Blockquote(v, a_o)) |
                     map!(tag!("\n"), |_| EntryTag::LineBreak))) >>
            tag!("</div>\n") >>
            ( TaggedEntry { tocid: divo.0, tags: tags, word: divo.1 } )));
