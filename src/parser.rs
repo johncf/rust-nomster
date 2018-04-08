@@ -117,7 +117,7 @@ impl<'a> Display for SimpleTag<'a> {
                 write!(f, "[{}]", text)?;
             }
             SimpleTag::BreakTag => {
-                write!(f, "<br>")?;
+                write!(f, "<br>\n")?;
             }
             SimpleTag::Emph(text) => {
                 write!(f, "<i>{}</i>", text)?;
@@ -193,7 +193,7 @@ named!(boxed_plain<&str, SimpleTag>,
        map!(delimited!(tag!("["), opt!(is_not!("<>[]")), tag!("]")),
             |s_o| SimpleTag::BoxedPlain(s_o.unwrap_or(""))));
 named!(break_tag<&str, SimpleTag>,
-       map!(tag!("<br>"), |_| SimpleTag::BreakTag));
+       map!(tag!("<br>\n"), |_| SimpleTag::BreakTag));
 named!(emph<&str, SimpleTag>,
        map!(delimited!(tag!("<i>"), take_until!("</i>"), tag!("</i>")),
             |s| SimpleTag::Emph(s)));
