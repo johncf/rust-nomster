@@ -3,7 +3,7 @@ extern crate nomster;
 #[macro_use]
 extern crate structopt;
 
-use nomster::parser;
+use nomster::Parser;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -16,9 +16,8 @@ struct Opt {
 fn main() {
     let opt = Opt::from_args();
     let contents = nomster::read_file(&opt.input).unwrap();
-    let mut contents = &*contents;
-    while let Some((_, entry, next)) = parser::next_entry2(contents) {
+    let entry_iter = Parser::new(&contents);
+    for (_, entry) in entry_iter {
         println!("{:?}", entry);
-        contents = next;
     }
 }

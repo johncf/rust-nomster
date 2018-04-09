@@ -238,7 +238,7 @@ named!(boxed<&str, ParaTag>,
 named!(simple<&str, ParaTag>,
        map!(simple_tags, |v| ParaTag::Simple(v)));
 
-named!(pub parse_entry2<&str, TaggedEntry>,
+named!(parse_entry<&str, TaggedEntry>,
        do_parse!(
            divo: div_open >>
            tags: many1!(
@@ -283,48 +283,37 @@ named!(div_open<&str, (u32, &str)>,
            ( tocid, word )
       ));
 
-named!(pub parse_entry<&str, RawEntry>,
-       do_parse!(
-           tocid: map!(div_open, |(tocid, _)| tocid) >>
-           tag!("<p>") >>
-               tag!("<strong>") >>
-                   word: take_until!("</strong>") >>
-               tag!("</strong>") >>
-               body: take_until!("</p>") >>
-           tag!("</p>") >>
-           extras: take_until!("</div>") >>
-           tag!("</div>") >>
-           ( RawEntry { word, tocid, body, extras } )
-      ));
+pub struct Parser<'a> {
+    contents: &'a str,
+}
 
-pub fn next_entry(contents: &str) -> Option<(&str, Result<RawEntry, &str>, &str)> {
-    if let Ok((remaining, skipped)) = entry_start(contents) {
-        let end_idx = remaining.find("</div>").expect("entry did not end properly") + 6;
-        let entry_str = &remaining[..end_idx];
-        let remaining = &remaining[end_idx..];
-        if let Ok((_, entry)) = parse_entry(entry_str) {
-            Some((skipped, Ok(entry), remaining))
-        } else {
-            Some((skipped, Err(entry_str), remaining))
-        }
-    } else {
-        None
+impl<'a> Parser<'a> {
+    pub fn new(contents: &'a str) -> Parser<'a> {
+        Parser { contents }
+    }
+
+    pub fn remaining(&self) -> &'a str {
+        self.contents
     }
 }
 
-pub fn next_entry2(contents: &str) -> Option<(&str, Result<TaggedEntry, &str>, &str)> {
-    if let Ok((remaining, skipped)) = entry_start(contents) {
-        let end_idx = remaining.find("</div>\n").expect("entry did not end properly") + 7;
-        let entry_str = &remaining[..end_idx];
-        let remaining = &remaining[end_idx..];
-        if let Ok((empty, entry_tags)) = parse_entry2(entry_str) {
-            assert!(empty.is_empty());
-            Some((skipped, Ok(entry_tags), remaining))
+impl<'a> Iterator for Parser<'a> {
+    type Item = (&'a str, Result<TaggedEntry<'a>, &'a str>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Ok((remaining, skipped)) = entry_start(self.contents) {
+            let end_idx = remaining.find("</div>\n").expect("entry did not end properly") + 7;
+            let entry_str = &remaining[..end_idx];
+            self.contents = &remaining[end_idx..];
+            if let Ok((empty, entry_tags)) = parse_entry(entry_str) {
+                assert!(empty.is_empty());
+                Some((skipped, Ok(entry_tags)))
+            } else {
+                Some((skipped, Err(entry_str)))
+            }
         } else {
-            Some((skipped, Err(entry_str), remaining))
+            None
         }
-    } else {
-        None
     }
 }
 
