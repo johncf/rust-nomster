@@ -8,6 +8,11 @@ name = "nomster"
 path = "src/lib.rs"
 
 [[bin]]
+name = "identity"
+path = "src/bin/identity.rs"
+required-features = ["binaries"]
+
+[[bin]]
 name = "sample"
 path = "src/bin/sample.rs"
 required-features = ["binaries"]
